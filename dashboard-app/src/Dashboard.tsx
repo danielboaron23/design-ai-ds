@@ -1,7 +1,14 @@
 import React, { useState } from 'react'
+import useLocalStorage from './hooks/useLocalStorage'
+import type { Post } from './types/Post'
 
 interface DashboardProps {
   onAction?: (message: string, type?: 'success' | 'error' | 'info') => void
+}
+
+interface Project {
+  id: number
+  status: string
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ onAction }) => {
@@ -9,6 +16,16 @@ const Dashboard: React.FC<DashboardProps> = ({ onAction }) => {
   const [selectedTimeFilter, setSelectedTimeFilter] = useState('12 months')
   const [selectedPost, setSelectedPost] = useState<number | null>(null)
   const [selectedMember, setSelectedMember] = useState<number | null>(null)
+  
+  // Get real data from localStorage
+  const [projects] = useLocalStorage<Project[]>('dashboard_projects', [])
+  const [posts] = useLocalStorage<Post[]>('dashboard_posts', [])
+  
+  // Calculate real stats
+  const activeProjects = projects.filter(p => p.status === 'active').length
+  const totalPosts = posts.length
+  const publishedPosts = posts.filter(p => p.status === 'published').length
+  const draftPosts = posts.filter(p => p.status === 'draft').length
 
 
   const handleMetricClick = (metric: string) => {
@@ -163,43 +180,43 @@ const Dashboard: React.FC<DashboardProps> = ({ onAction }) => {
 
           <div className="metrics-sidebar">
             <div 
-              className={`metric-item ${selectedMetric === 'Total members' ? 'selected' : ''}`}
-              onClick={() => handleMetricClick('Total members')}
+              className={`metric-item ${selectedMetric === 'Active Projects' ? 'selected' : ''}`}
+              onClick={() => handleMetricClick('Active Projects')}
             >
-              <h4 className="metric-label">Total members</h4>
+              <h4 className="metric-label">Active Projects</h4>
               <div className="metric-value-container">
-                <span className="metric-value">4,862</span>
+                <span className="metric-value">{activeProjects}</span>
                 <div className="metric-growth-badge">
                   <span className="growth-arrow">↗</span>
-                  <span className="growth-percentage">9.2%</span>
+                  <span className="growth-percentage">Live</span>
                 </div>
               </div>
             </div>
 
             <div 
-              className={`metric-item ${selectedMetric === 'Paid members' ? 'selected' : ''}`}
-              onClick={() => handleMetricClick('Paid members')}
+              className={`metric-item ${selectedMetric === 'Total Posts' ? 'selected' : ''}`}
+              onClick={() => handleMetricClick('Total Posts')}
             >
-              <h4 className="metric-label">Paid members</h4>
+              <h4 className="metric-label">Total Posts</h4>
               <div className="metric-value-container">
-                <span className="metric-value">2,671</span>
+                <span className="metric-value">{totalPosts}</span>
                 <div className="metric-growth-badge">
-                  <span className="growth-arrow">↗</span>
-                  <span className="growth-percentage">6.6%</span>
+                  <span className="growth-arrow">📝</span>
+                  <span className="growth-percentage">{publishedPosts} published</span>
                 </div>
               </div>
             </div>
 
             <div 
-              className={`metric-item ${selectedMetric === 'Email open rate' ? 'selected' : ''}`}
-              onClick={() => handleMetricClick('Email open rate')}
+              className={`metric-item ${selectedMetric === 'Drafts' ? 'selected' : ''}`}
+              onClick={() => handleMetricClick('Drafts')}
             >
-              <h4 className="metric-label">Email open rate</h4>
+              <h4 className="metric-label">Draft Posts</h4>
               <div className="metric-value-container">
-                <span className="metric-value">82%</span>
+                <span className="metric-value">{draftPosts}</span>
                 <div className="metric-growth-badge">
-                  <span className="growth-arrow">↗</span>
-                  <span className="growth-percentage">8.1%</span>
+                  <span className="growth-arrow">✏️</span>
+                  <span className="growth-percentage">In progress</span>
                 </div>
               </div>
             </div>

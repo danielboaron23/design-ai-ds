@@ -3,6 +3,7 @@ import './App.css'
 import Settings from './Settings'
 import Dashboard from './Dashboard'
 import Projects from './Projects'
+import Posts from './Posts'
 
 // Toast notification component
 const Toast = ({ message, type, onClose }: { message: string; type: 'success' | 'error' | 'info'; onClose: () => void }) => {
@@ -63,6 +64,8 @@ function App() {
         return <Settings onSave={addToast} onError={addToast} />
       case 'projects':
         return <Projects onAction={addToast} />
+      case 'posts':
+        return <Posts onAction={addToast} />
       case 'dashboard':
       default:
         return <Dashboard onAction={addToast} />
@@ -116,6 +119,15 @@ function App() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
             </svg>
             <span>Projects</span>
+          </button>
+          <button
+            className={`nav-item ${currentPage === 'posts' ? 'active' : ''}`}
+            onClick={() => handleNavigation('posts')}
+          >
+            <svg className="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
+            </svg>
+            <span>Posts</span>
           </button>
           <button
             className={`nav-item ${currentPage === 'tasks' ? 'active' : ''}`}

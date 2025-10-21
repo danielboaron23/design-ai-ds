@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import useLocalStorage from './hooks/useLocalStorage'
 
 interface ProjectsProps {
   onAction?: (message: string, type?: 'success' | 'error' | 'info') => void
@@ -31,10 +32,19 @@ const Projects: React.FC<ProjectsProps> = ({ onAction }) => {
   const [categoryFilter, setCategoryFilter] = useState('all')
   const [sortBy, setSortBy] = useState('recent')
   const [showNewProjectModal, setShowNewProjectModal] = useState(false)
-  const [selectedProject, setSelectedProject] = useState<Project | null>(null)
+  const [, setSelectedProject] = useState<Project | null>(null)
+  
+  // New project form data
+  const [newProjectData, setNewProjectData] = useState({
+    name: '',
+    description: '',
+    category: 'Web Development',
+    priority: 'medium' as 'high' | 'medium' | 'low',
+    dueDate: ''
+  })
 
-  // Sample project data
-  const [projects] = useState<Project[]>([
+  // Sample project data - now persisted in localStorage
+  const initialProjects: Project[] = [
     {
       id: 1,
       name: "E-commerce Mobile App Redesign",
@@ -181,7 +191,10 @@ const Projects: React.FC<ProjectsProps> = ({ onAction }) => {
       projectManager: 'Mark Thompson',
       isOverdue: true
     }
-  ])
+  ]
+  
+  // Use localStorage hook to persist projects
+  const [projects, setProjects] = useLocalStorage<Project[]>('dashboard_projects', initialProjects)
 
   // Filter and sort projects
   const filteredProjects = projects
@@ -238,17 +251,63 @@ const Projects: React.FC<ProjectsProps> = ({ onAction }) => {
 
   const handleProjectClick = (project: Project) => {
     setSelectedProject(project)
-    onAction?.(`Opening project: ${project.name}`, 'info')
+    // Removed notification
   }
 
   const handleNewProject = () => {
     setShowNewProjectModal(true)
-    onAction?.('Creating new project...', 'info')
+    // Reset form
+    setNewProjectData({
+      name: '',
+      description: '',
+      category: 'Web Development',
+      priority: 'medium',
+      dueDate: ''
+    })
+  }
+
+  const handleCreateProject = () => {
+    // Validation
+    if (!newProjectData.name.trim()) {
+      onAction?.('Please enter a project name', 'error')
+      return
+    }
+    if (!newProjectData.dueDate) {
+      onAction?.('Please select a due date', 'error')
+      return
+    }
+
+    // Create new project
+    const newProject: Project = {
+      id: Math.max(...projects.map(p => p.id), 0) + 1,
+      name: newProjectData.name,
+      description: newProjectData.description,
+      status: 'active',
+      priority: newProjectData.priority,
+      category: newProjectData.category,
+      progress: 0,
+      tasksCompleted: 0,
+      totalTasks: 0,
+      dueDate: newProjectData.dueDate,
+      teamMembers: [
+        { 
+          id: 1, 
+          name: 'You', 
+          avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face' 
+        }
+      ],
+      projectManager: 'You',
+      isOverdue: false
+    }
+
+    // Add to projects list
+    setProjects(prev => [newProject, ...prev])
+    setShowNewProjectModal(false)
+    onAction?.(`Project "${newProject.name}" created successfully! 🎉`, 'success')
   }
 
   const handleViewToggle = (view: 'cards' | 'list' | 'timeline') => {
     setViewMode(view)
-    onAction?.(`Switched to ${view} view`, 'info')
   }
 
   return (
@@ -543,7 +602,6 @@ const Projects: React.FC<ProjectsProps> = ({ onAction }) => {
                           className="action-btn"
                           onClick={(e) => {
                             e.stopPropagation()
-                            onAction?.(`Viewing ${project.name}`, 'info')
                           }}
                         >
                           <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -555,7 +613,6 @@ const Projects: React.FC<ProjectsProps> = ({ onAction }) => {
                           className="action-btn"
                           onClick={(e) => {
                             e.stopPropagation()
-                            onAction?.(`Editing ${project.name}`, 'info')
                           }}
                         >
                           <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -566,7 +623,6 @@ const Projects: React.FC<ProjectsProps> = ({ onAction }) => {
                           className="action-btn"
                           onClick={(e) => {
                             e.stopPropagation()
-                            onAction?.(`Sharing ${project.name}`, 'info')
                           }}
                         >
                           <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -601,19 +657,35 @@ const Projects: React.FC<ProjectsProps> = ({ onAction }) => {
             
             <div className="modal-body">
               <div className="form-group">
-                <label className="form-label">Project Name</label>
-                <input type="text" className="form-input" placeholder="Enter project name" />
+                <label className="form-label">Project Name *</label>
+                <input 
+                  type="text" 
+                  className="form-input" 
+                  placeholder="Enter project name"
+                  value={newProjectData.name}
+                  onChange={(e) => setNewProjectData(prev => ({ ...prev, name: e.target.value }))}
+                />
               </div>
               
               <div className="form-group">
                 <label className="form-label">Description</label>
-                <textarea className="form-textarea" placeholder="Describe the project" rows={3}></textarea>
+                <textarea 
+                  className="form-textarea" 
+                  placeholder="Describe the project" 
+                  rows={3}
+                  value={newProjectData.description}
+                  onChange={(e) => setNewProjectData(prev => ({ ...prev, description: e.target.value }))}
+                />
               </div>
               
               <div className="form-row">
                 <div className="form-group">
                   <label className="form-label">Category</label>
-                  <select className="form-select">
+                  <select 
+                    className="form-select"
+                    value={newProjectData.category}
+                    onChange={(e) => setNewProjectData(prev => ({ ...prev, category: e.target.value }))}
+                  >
                     <option>Web Development</option>
                     <option>Mobile App</option>
                     <option>Design</option>
@@ -624,17 +696,27 @@ const Projects: React.FC<ProjectsProps> = ({ onAction }) => {
                 
                 <div className="form-group">
                   <label className="form-label">Priority</label>
-                  <select className="form-select">
-                    <option>Low</option>
-                    <option>Medium</option>
-                    <option>High</option>
+                  <select 
+                    className="form-select"
+                    value={newProjectData.priority}
+                    onChange={(e) => setNewProjectData(prev => ({ ...prev, priority: e.target.value as 'high' | 'medium' | 'low' }))}
+                  >
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
                   </select>
                 </div>
               </div>
               
               <div className="form-group">
-                <label className="form-label">Due Date</label>
-                <input type="date" className="form-input" />
+                <label className="form-label">Due Date *</label>
+                <input 
+                  type="date" 
+                  className="form-input"
+                  value={newProjectData.dueDate}
+                  onChange={(e) => setNewProjectData(prev => ({ ...prev, dueDate: e.target.value }))}
+                  min={new Date().toISOString().split('T')[0]}
+                />
               </div>
             </div>
             
@@ -647,10 +729,8 @@ const Projects: React.FC<ProjectsProps> = ({ onAction }) => {
               </button>
               <button 
                 className="btn-primary"
-                onClick={() => {
-                  setShowNewProjectModal(false)
-                  onAction?.('Project created successfully!', 'success')
-                }}
+                onClick={handleCreateProject}
+                disabled={!newProjectData.name.trim() || !newProjectData.dueDate}
               >
                 Create Project
               </button>
